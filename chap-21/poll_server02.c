@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
             socklen_t client_len = sizeof(client_addr);
             connected_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_len);
 
-            add_event_set(connected_fd,POLLRDNORM);
+            add_event_set(connected_fd, POLLRDNORM);
 
             if (i == FOPEN_MAX) {
                 error(1, errno, "can not hold so many clients");

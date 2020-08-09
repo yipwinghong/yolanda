@@ -1,5 +1,5 @@
-add_executable(pingclient pingclient.c)
-target_link_libraries(pingclient yolanda)
+add_executable(ping_client ping_client.c)
+target_link_libraries(ping_client yolanda)
 
-add_executable(pingserver pingserver.c)
-target_link_libraries(pingserver yolanda)
+add_executable(ping_server ping_server.c)
+target_link_libraries(ping_server yolanda)

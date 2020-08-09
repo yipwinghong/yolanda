@@ -1,72 +1,92 @@
 # include "lib/common.h"
 
-# define    MAXLINE     4096
+# define MAXLINE 4096
 
+/**
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
     if (argc != 2) {
         error(1, 0, "usage: graceclient <IPaddress>");
 
     }
+    /* 创建 TCP 套接字，设置 IPv4 地址（清零、设置地址族，指定端口，转换地址），绑定指定的 IP 和端口 */
     int socket_fd;
-    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-
     struct sockaddr_in server_addr;
+    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERV_PORT);
     inet_pton(AF_INET, argv[1], &server_addr.sin_addr);
 
-    socklen_t server_len = sizeof(server_addr);
-    int connect_rt = connect(socket_fd, (struct sockaddr *) &server_addr, server_len);
-    if (connect_rt < 0) {
+    /* 试用套接字连接 server */
+    if (connect(socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
         error(1, errno, "connect failed ");
     }
 
     char send_line[MAXLINE], recv_line[MAXLINE + 1];
     int n;
 
-    fd_set readmask;
-    fd_set allreads;
+    fd_set readmask, allreads;
 
+    /* 为 select 多路复用做准备，初始化描述字集合：同时处理连接套接字和标准输入两个 I/O 对象 */
     FD_ZERO(&allreads);
     FD_SET(0, &allreads);
     FD_SET(socket_fd, &allreads);
+
     for (;;) {
         readmask = allreads;
         int rc = select(socket_fd + 1, &readmask, NULL, NULL, NULL);
-        if (rc <= 0)
+        if (rc <= 0) {
             error(1, errno, "select failed");
+        }
+        /* 连接套接字上有数据可读，将数据读入到程序缓冲区中 */
         if (FD_ISSET(socket_fd, &readmask)) {
             n = read(socket_fd, recv_line, MAXLINE);
+            /* 读取异常，退出 */
             if (n < 0) {
                 error(1, errno, "read error");
-            } else if (n == 0) {
+            }
+            /* 读取到服务器发送的 EOF，正常退出 */
+            else if (n == 0) {
                 error(1, 0, "server terminated \n");
             }
             recv_line[n] = 0;
             fputs(recv_line, stdout);
             fputs("\n", stdout);
         }
+        /* 标准输入上有数据可读，读入后判断 */
         if (FD_ISSET(0, &readmask)) {
             if (fgets(send_line, MAXLINE, stdin) != NULL) {
+
+                /*
+                 * 读取到 shutdown，关闭标准输入 I/O 事件感知，调用 shutdown 函数关闭写方向
+                 * 但此时读方向未关闭，仍然可以接收来自服务端的消息
+                 */
                 if (strncmp(send_line, "shutdown", 8) == 0) {
                     FD_CLR(0, &allreads);
                     if (shutdown(socket_fd, 1)) {
                         error(1, errno, "shutdown failed");
                     }
-                } else if (strncmp(send_line, "close", 5) == 0) {
+                }
+                /* 读取到 close，调用 close 函数关闭连接（不能收到应答数据） */
+                else if (strncmp(send_line, "close", 5) == 0) {
                     FD_CLR(0, &allreads);
                     if (close(socket_fd)) {
                         error(1, errno, "close failed");
                     }
                     sleep(6);
                     exit(0);
-                } else {
-                    int i = strlen(send_line);
+                }
+                /* 处理正常的输入，将回车符截掉，调用 write 函数，通过套接字将数据发送给服务器端 */
+                else {
+                    size_t i = strlen(send_line);
                     if (send_line[i - 1] == '\n') {
                         send_line[i - 1] = 0;
                     }
-
                     printf("now sending %s\n", send_line);
                     size_t rt = write(socket_fd, send_line, strlen(send_line));
                     if (rt < 0) {
@@ -74,11 +94,8 @@ int main(int argc, char **argv) {
                     }
                     printf("send bytes: %zu \n", rt);
                 }
-
             }
         }
-
     }
-
 }
 

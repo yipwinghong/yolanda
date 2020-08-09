@@ -1,15 +1,17 @@
-//
-// Created by shengym on 2019-07-12.
-//
+//#include <netinet/in.h>
 #include "lib/common.h"
 
-#define    MAXLINE     4096
+
+# define    NDG         2000    /* datagrams to send */
+# define    DGLEN       1400    /* length of each datagram */
+# define    MAXLINE     4096
+
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        error(1, 0, "usage: udpclient1 <IPaddress>");
-    }
+        error(1, 0, "usage: udpclient <IPaddress>");
 
+    }
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -20,10 +22,6 @@ int main(int argc, char **argv) {
     inet_pton(AF_INET, argv[1], &server_addr.sin_addr);
 
     socklen_t server_len = sizeof(server_addr);
-
-    if (connect(socket_fd, (struct sockaddr *) &server_addr, server_len)) {
-        error(1, errno, "connect failed");
-    }
 
     struct sockaddr *reply_addr;
     reply_addr = malloc(server_len);
@@ -39,21 +37,23 @@ int main(int argc, char **argv) {
         }
 
         printf("now sending %s\n", send_line);
+
+        /* sendto 可以是做 connect 与 send 的结合 */
         size_t rt = sendto(socket_fd, send_line, strlen(send_line), 0, (struct sockaddr *) &server_addr, server_len);
         if (rt < 0) {
-            error(1, errno, "sendto failed");
+            error(1, errno, "send failed ");
         }
         printf("send bytes: %zu \n", rt);
 
         len = 0;
-        recv_line[0] = 0;
+
+        /* recvfrom 可以视作 accept 与 read 的结合 */
         n = recvfrom(socket_fd, recv_line, MAXLINE, 0, reply_addr, &len);
         if (n < 0)
             error(1, errno, "recvfrom failed");
         recv_line[n] = 0;
         fputs(recv_line, stdout);
         fputs("\n", stdout);
-
     }
 
     exit(0);

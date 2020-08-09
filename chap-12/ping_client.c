@@ -6,40 +6,32 @@
 #define    KEEP_ALIVE_INTERVAL  3
 #define    KEEP_ALIVE_PROBETIMES  3
 
-
+/**
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
     if (argc != 2) {
         error(1, 0, "usage: tcpclient <IPaddress>");
     }
 
-    int socket_fd;
-    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-
+    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_addr;
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERV_PORT);
     inet_pton(AF_INET, argv[1], &server_addr.sin_addr);
-
-    socklen_t server_len = sizeof(server_addr);
-    int connect_rt = connect(socket_fd, (struct sockaddr *) &server_addr, server_len);
-    if (connect_rt < 0) {
+    if (connect(socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
         error(1, errno, "connect failed ");
     }
 
-    char recv_line[MAXLINE + 1];
-    int n;
-
-    fd_set readmask;
-    fd_set allreads;
-
-
+    fd_set readmask, allreads;
     struct timeval tv;
     int heartbeats = 0;
-
     tv.tv_sec = KEEP_ALIVE_TIME;
     tv.tv_usec = 0;
-
     messageObject messageObject;
 
     FD_ZERO(&allreads);
@@ -64,8 +56,11 @@ int main(int argc, char **argv) {
             tv.tv_sec = KEEP_ALIVE_INTERVAL;
             continue;
         }
+
+        /* 套接字上有数据返回 */
         if (FD_ISSET(socket_fd, &readmask)) {
-            n = read(socket_fd, recv_line, MAXLINE);
+            char recv_line[MAXLINE + 1];
+            int n = read(socket_fd, recv_line, MAXLINE);
             if (n < 0) {
                 error(1, errno, "read error");
             } else if (n == 0) {

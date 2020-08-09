@@ -1,6 +1,6 @@
-add_executable(graceclient graceclient.c)
-target_link_libraries(graceclient yolanda)
+add_executable(grace_client grace_client.c)
+target_link_libraries(grace_client yolanda)
 
-add_executable(graceserver graceserver.c)
-target_link_libraries(graceserver yolanda)
+add_executable(grace_server grace_server.c)
+target_link_libraries(grace_server yolanda)
 

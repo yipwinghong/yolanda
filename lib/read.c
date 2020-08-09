@@ -1,24 +1,48 @@
 #include "common.h"
 
+/**
+ * 从 socketfd 描述字中读取 size 个字节
+ *
+ * @param fd
+ * @param buffer
+ * @param size
+ * @return
+ */
 size_t readn(int fd, void *buffer, size_t size) {
     char *buffer_pointer = buffer;
     int length = size;
 
     while (length > 0) {
+
+        /**
+         * @param socketfd  套接字
+         * @param buffer    读缓冲区
+         * @param size      最多读取 size 个字节
+         * @return          返回值为 0 表示 EOF（在网络中表示对端发送了 FIN 包，要处理断连的情况）
+         *                  返回值为 -1 表示出错，返回其他表示本次读取字节个数
+         */
         int result = read(fd, buffer_pointer, length);
 
         if (result < 0) {
-            if (errno == EINTR)
-                continue;     /* 考虑非阻塞的情况，这里需要再次调用read */
-            else
+            /* 考虑非阻塞的情况，这里需要再次调用read */
+            if (errno == EINTR) {
+                continue;
+            }
+            else {
                 return (-1);
-        } else if (result == 0)
-            break;                /* EOF(End of File)表示套接字关闭 */
-
+            }
+        } else if (result == 0) {
+            break;
+        }
+        // 计算剩余待读取 length 个字节
         length -= result;
+
+        // 移动缓冲区指针
         buffer_pointer += result;
     }
-    return (size - length);        /* 返回的是实际读取的字节数*/
+
+    /* 返回的是实际读取的字节数 */
+    return (size - length);
 }
 
 
@@ -75,31 +99,42 @@ size_t readline(int fd, char *buffer, size_t length) {
     return -1;
 }
 
+/**
+ * 解析报文
+ *
+ * @param fd
+ * @param buffer
+ * @param length
+ * @return
+ */
 size_t read_message(int fd, char *buffer, size_t length) {
-    u_int32_t msg_length;
-    u_int32_t msg_type;
+    u_int32_t msg_length, msg_type;
     int rc;
 
     /* Retrieve the length of the record */
-
     rc = readn(fd, (char *) &msg_length, sizeof(u_int32_t));
-    if (rc != sizeof(u_int32_t))
+    if (rc != sizeof(u_int32_t)) {
         return rc < 0 ? -1 : 0;
+    }
     msg_length = ntohl(msg_length);
 
+    /* 获取 4 个字节的消息类型数据 */
     rc = readn(fd, (char *) &msg_type, sizeof(msg_type));
-    if (rc != sizeof(u_int32_t))
+    if (rc != sizeof(u_int32_t)) {
         return rc < 0 ? -1 : 0;
+    }
 
-    /* 判断buffer是否可以容纳下数据  */
+    /* 判断 buffer 是否可以容纳下数据，如果大到本地缓冲区不能容纳，则直接返回错误  */
     if (msg_length > length) {
         return -1;
     }
 
     /* Retrieve the record itself */
+    /* 一次性读取已知长度的消息体。 */
     rc = readn(fd, buffer, msg_length);
-    if (rc != msg_length)
+    if (rc != msg_length) {
         return rc < 0 ? -1 : 0;
+    }
     return rc;
 }
 

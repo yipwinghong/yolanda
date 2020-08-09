@@ -70,7 +70,11 @@ int tcp_server_listen(int port) {
     return listenfd;
 }
 
-
+/**
+ *
+ * @param port
+ * @return
+ */
 int tcp_nonblocking_server_listen(int port) {
     int listenfd;
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -101,6 +105,9 @@ int tcp_nonblocking_server_listen(int port) {
     return listenfd;
 }
 
+/*
+ * 将监听套接字设置为非阻塞
+ */
 void make_nonblocking(int fd) {
     fcntl(fd, F_SETFL, O_NONBLOCK);
 }

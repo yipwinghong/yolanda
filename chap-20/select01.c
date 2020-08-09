@@ -1,6 +1,6 @@
 #include "lib/common.h"
 
-#define  MAXLINE     1024
+#define MAXLINE 1024
 
 
 int main(int argc, char **argv) {
@@ -10,24 +10,22 @@ int main(int argc, char **argv) {
     int socket_fd = tcp_client(argv[1], SERV_PORT);
 
     char recv_line[MAXLINE], send_line[MAXLINE];
-    int n;
-
-    fd_set readmask;
-    fd_set allreads;
+    fd_set readmask, allreads;
     FD_ZERO(&allreads);
-    FD_SET(0, &allreads);
+    FD_SET(STDIN_FILENO, &allreads);
     FD_SET(socket_fd, &allreads);
 
     for (;;) {
+        // 每次 select 调用完成后都要重置待测试集合
         readmask = allreads;
-        int rc = select(socket_fd + 1, &readmask, NULL, NULL, NULL);
 
-        if (rc <= 0) {
+        // 待测试的描述符基数，值为最大描述符 + 1，表示为从 0 ~ socket_fd 的 Bitmap：1 为检测、0 为不检测
+        if (select(socket_fd + 1, &readmask, NULL, NULL, NULL) <= 0) {
             error(1, errno, "select failed");
         }
 
         if (FD_ISSET(socket_fd, &readmask)) {
-            n = read(socket_fd, recv_line, MAXLINE);
+            int n = read(socket_fd, recv_line, MAXLINE);
             if (n < 0) {
                 error(1, errno, "read error");
             } else if (n == 0) {

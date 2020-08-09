@@ -1,6 +1,6 @@
-add_executable(udpclient udpclient.c)
-target_link_libraries(udpclient yolanda)
+add_executable(udp_client udp_client.c)
+target_link_libraries(udp_client yolanda)
 
-add_executable(udpserver udpserver.c)
-target_link_libraries(udpserver yolanda)
+add_executable(udp_server udp_server.c)
+target_link_libraries(udp_server yolanda)
 

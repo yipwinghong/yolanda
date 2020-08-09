@@ -4,12 +4,13 @@
 #define FD_INIT_SIZE 128
 
 char rot13_char(char c) {
-    if ((c >= 'a' && c <= 'm') || (c >= 'A' && c <= 'M'))
+    if ((c >= 'a' && c <= 'm') || (c >= 'A' && c <= 'M')) {
         return c + 13;
-    else if ((c >= 'n' && c <= 'z') || (c >= 'N' && c <= 'Z'))
+    } else if ((c >= 'n' && c <= 'z') || (c >= 'N' && c <= 'Z')) {
         return c - 13;
-    else
+    } else {
         return c;
+    }
 }
 
 //数据缓冲区
@@ -37,7 +38,13 @@ void free_Buffer(struct Buffer *buffer) {
     free(buffer);
 }
 
-//这里从fd套接字读取数据，数据先读取到本地buf数组中，再逐个拷贝到buffer对象缓冲中
+/**
+ * 这里从fd套接字读取数据，数据先读取到本地buf数组中，再逐个拷贝到buffer对象缓冲中
+ *
+ * @param fd
+ * @param buffer
+ * @return
+ */
 int onSocketRead(int fd, struct Buffer *buffer) {
     char buf[1024];
     int i;
@@ -70,7 +77,13 @@ int onSocketRead(int fd, struct Buffer *buffer) {
     return 0;
 }
 
-//从buffer对象的readIndex开始读，一直读到writeIndex的位置，这段区间是有效数据
+/**
+ * 从buffer对象的readIndex开始读，一直读到writeIndex的位置，这段区间是有效数据
+ *
+ * @param fd
+ * @param buffer
+ * @return
+ */
 int onSocketWrite(int fd, struct Buffer *buffer) {
     while (buffer->readIndex < buffer->writeIndex) {
         ssize_t result = send(fd, buffer->buffer + buffer->readIndex, buffer->writeIndex - buffer->readIndex, 0);
@@ -83,17 +96,22 @@ int onSocketWrite(int fd, struct Buffer *buffer) {
         buffer->readIndex += result;
     }
 
-    //readindex已经追上writeIndex，说明有效发送区间已经全部读完，将readIndex和writeIndex设置为0，复用这段缓冲
+    // readindex 已经追上 writeIndex，说明有效发送区间已经全部读完，将 readIndex 和 writeIndex 设置为0，复用这段缓冲
     if (buffer->readIndex == buffer->writeIndex)
         buffer->readIndex = buffer->writeIndex = 0;
 
-    //缓冲数据已经全部读完，不需要再读
+    // 缓冲数据已经全部读完，不需要再读
     buffer->readable = 0;
 
     return 0;
 }
 
-
+/**
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
     int listen_fd;
     int i, maxfd;
@@ -131,6 +149,7 @@ int main(int argc, char **argv) {
             }
         }
 
+        // 调用 select 进行 I/O 事件分发处理
         if (select(maxfd + 1, &readset, &writeset, &exset, NULL) < 0) {
             error(1, errno, "select error");
         }
@@ -140,6 +159,8 @@ int main(int argc, char **argv) {
             sleep(5);
             struct sockaddr_storage ss;
             socklen_t slen = sizeof(ss);
+
+            // 处理新的连接套接字，这里也把连接套接字设置为非阻塞的
             int fd = accept(listen_fd, (struct sockaddr *) &ss, &slen);
             if (fd < 0) {
                 error(1, errno, "accept failed");
@@ -158,9 +179,12 @@ int main(int argc, char **argv) {
 
         for (i = 0; i < maxfd + 1; ++i) {
             int r = 0;
-            if (i == listen_fd)
+            if (i == listen_fd) {
                 continue;
+            }
 
+            // 处理连接套接字上的 I/O 读写事件
+            // 抽象了一个 Buffer 对象，Buffer 对象使用了 readIndex 和 writeIndex 分别表示当前缓冲的读写位置
             if (FD_ISSET(i, &readset)) {
                 r = onSocketRead(i, buffer[i]);
             }

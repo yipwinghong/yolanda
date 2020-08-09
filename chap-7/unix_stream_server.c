@@ -35,10 +35,7 @@ int main(int argc, char **argv) {
 
     clilen = sizeof(cliaddr);
     if ((connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen)) < 0) {
-        if (errno == EINTR)
-            error(1, errno, "accept failed");        /* back to for() */
-        else
-            error(1, errno, "accept failed");
+        error(1, errno, "accept failed");
     }
 
     char buf[BUFFER_SIZE];
