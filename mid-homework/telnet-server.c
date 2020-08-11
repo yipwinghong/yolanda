@@ -41,13 +41,10 @@ int main(int argc, char **argv) {
     int on = 1;
     setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-    int rt1 = bind(listenfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
-    if (rt1 < 0) {
+    if (bind(listenfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
         error(1, errno, "bind failed ");
     }
-
-    int rt2 = listen(listenfd, LISTENQ);
-    if (rt2 < 0) {
+    if (listen(listenfd, LISTENQ) < 0) {
         error(1, errno, "listen failed ");
     }
 
@@ -56,7 +53,6 @@ int main(int argc, char **argv) {
     int connfd;
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
-
 
     char buf[256];
     count = 0;

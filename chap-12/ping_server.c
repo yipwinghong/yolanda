@@ -65,11 +65,12 @@ int main(int argc, char **argv) {
 
         switch (ntohl(message.type)) {
             case MSG_TYPE1 :
-                printf("process  MSG_TYPE1 \n");
+                printf("process MSG_TYPE1 \n");
                 break;
             case MSG_TYPE2 :
-                printf("process  MSG_TYPE2 \n");
+                printf("process MSG_TYPE2 \n");
                 break;
+            // 处理来自 client 的 PING 消息，并休眠模拟响应处理时间，再响应 PONG 报文
             case MSG_PING: {
                 messageObject pong_message;
                 pong_message.type = MSG_PONG;
@@ -82,6 +83,7 @@ int main(int argc, char **argv) {
                 }
                 break;
             }
+            // 消息格式无法识别
             default :
                 error(1, 0, "unknown message type (%d)\n", ntohl(message.type));
         }

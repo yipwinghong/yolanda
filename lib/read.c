@@ -99,7 +99,7 @@ size_t readline(int fd, char *buffer, size_t length) {
 }
 
 /**
- * 解析报文
+ * 解析报文，报文格式：消息长度 (4bytes) | 消息类型 (4bytes) | 请求正文
  *
  * @param fd
  * @param buffer
@@ -111,19 +111,21 @@ size_t read_message(int fd, char *buffer, size_t length) {
     int rc;
 
     /* Retrieve the length of the record */
+
+    /* 读取 4bytes 的消息长度数据  */
     rc = readn(fd, (char *) &msg_length, sizeof(u_int32_t));
     if (rc != sizeof(u_int32_t)) {
         return rc < 0 ? -1 : 0;
     }
-    msg_length = ntohl(msg_length);
-
-    /* 获取 4 个字节的消息类型数据 */
+    
+    /* 读取 4bytes 的消息类型数据 */
     rc = readn(fd, (char *) &msg_type, sizeof(msg_type));
     if (rc != sizeof(u_int32_t)) {
         return rc < 0 ? -1 : 0;
     }
 
     /* 判断 buffer 是否可以容纳下数据，如果大到本地缓冲区不能容纳，则直接返回错误  */
+    msg_length = ntohl(msg_length);
     if (msg_length > length) {
         return -1;
     }
@@ -137,15 +139,26 @@ size_t read_message(int fd, char *buffer, size_t length) {
     return rc;
 }
 
-
+/**
+ * 解析报文，以换行符为边界
+ *
+ * @param fd
+ * @param buf
+ * @param size
+ * @return
+ */
 int read_line(int fd, char *buf, int size) {
     int i = 0;
     char c = '\0';
     int n;
 
     while ((i < size - 1) && (c != '\n')) {
+
+        // 每次尝试读取一个字节
         n = recv(fd, &c, 1, 0);
         if (n > 0) {
+
+            // 如果读取到 \r，则判断下一个是否为换行符，是则读取该换行符
             if (c == '\r') {
                 n = recv(fd, &c, 1, MSG_PEEK);
                 if ((n > 0) && (c == '\n'))
@@ -153,6 +166,7 @@ int read_line(int fd, char *buf, int size) {
                 else
                     c = '\n';
             }
+            // 没有读取到 \r，则把字符放到缓冲区，并移动指针
             buf[i] = c;
             i++;
         } else

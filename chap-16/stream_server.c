@@ -19,6 +19,8 @@ int main(int argc, char **argv) {
     struct sockaddr_in server_addr;
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
+
+    // htonX 函数用于主机和网络的格式转换，即 host to network short/long，可保证网络字节序一致
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(SERV_PORT);
 

@@ -40,9 +40,10 @@ int main(int argc, char **argv) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(12345);
 
-    /* bind到本地地址，端口为12345 */
+    /* bind 到本地地址，端口为 12345 */
     bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-    /* listen的backlog为1024 */
+    // listen 的 backlog 为 1024，即未完成连接队列长度为 1024
+    // 如果一个连接到达时该队列已满，客户端将会接收一个 ECONNREFUSED 的错误信息，如果支持重传，该请求可能会被忽略，之后会进行一次重传。
     listen(listenfd, 1024);
 
     /* 循环处理用户请求 */
