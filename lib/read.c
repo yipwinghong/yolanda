@@ -24,14 +24,14 @@ size_t readn(int fd, void *buffer, size_t size) {
         int result = read(fd, buffer_pointer, length);
 
         if (result < 0) {
-            /* 考虑非阻塞的情况，这里需要再次调用read */
+            /* 考虑非阻塞的情况，这里需要再次调用 read */
             if (errno == EINTR) {
                 continue;
-            }
-            else {
+            } else {
                 return (-1);
             }
         } else if (result == 0) {
+            /* EOF(End of File) 表示套接字关闭 */
             break;
         }
         // 计算剩余待读取 length 个字节
@@ -44,7 +44,6 @@ size_t readn(int fd, void *buffer, size_t size) {
     /* 返回的是实际读取的字节数 */
     return (size - length);
 }
-
 
 size_t readline_2(int fd, char *buffer, size_t length) {
     char *buf_first = buffer;

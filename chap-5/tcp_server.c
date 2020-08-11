@@ -11,9 +11,9 @@ void read_data(int sockfd) {
     int time = 0;
     for (;;) {
         fprintf(stdout, "block in read\n");
-        if ((n = readn(sockfd, buf, 1024)) == 0)
+        if ((n = readn(sockfd, buf, 1024)) == 0) {
             return;
-
+        }
         time++;
         fprintf(stdout, "1K read for %d \n", time);
 
