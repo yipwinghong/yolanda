@@ -3,7 +3,8 @@
 #define INIT_SIZE 128
 
 /**
- *
+ * 相较于 select，poll 的改进：
+ *      可以突破 select 1024 个文件描述符的限制，在高并发场景下更占优势
  *
  * @param argc
  * @param argv
@@ -18,7 +19,7 @@ int main(int argc, char **argv) {
     listen_fd = tcp_server_listen(SERV_PORT);
 
     // 初始化 pollfd 数组（pollfd：描述符、检测事件、返回事件），数组的第一个元素是 listen_fd，其余的用来记录将要连接的 connect_fd
-    // 可改进为动态分配数组的方式（见 poll_server02），内存不够进行 realloc 或者申请一块更大的内存，把源数组拷贝过来
+    // 可改进为动态分配数组的方式（见 poll_server02），内存不够进行 realloc 或者申请一块更大的内存，把原数组拷贝过来
     struct pollfd event_set[INIT_SIZE];
     event_set[0].fd = listen_fd;
 

@@ -23,7 +23,11 @@ struct Buffer {
 };
 
 
-//分配一个Buffer对象，初始化writeIdnex和readIndex等
+/**
+ * 分配一个 Buffer 对象，初始化 writeIdnex 和 readIndex 等
+ *
+ * @return
+ */
 struct Buffer *alloc_Buffer() {
     struct Buffer *buffer = malloc(sizeof(struct Buffer));
     if (!buffer)
