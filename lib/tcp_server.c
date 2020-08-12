@@ -93,11 +93,9 @@ int tcp_nonblocking_server_listen(int port) {
     if (bind(listenfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
         error(1, errno, "bind failed ");
     }
-
     if (listen(listenfd, LISTENQ) < 0) {
         error(1, errno, "listen failed ");
     }
-
     signal(SIGPIPE, SIG_IGN);
 
     return listenfd;

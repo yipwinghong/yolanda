@@ -128,10 +128,9 @@ int main(int argc, char **argv) {
     listen_fd = tcp_nonblocking_server_listen(SERV_PORT);
 
     fd_set readset, writeset, exset;
-    FD_ZERO(&readset);
-    FD_ZERO(&writeset);
-    FD_ZERO(&exset);
-
+    // FD_ZERO(&readset);
+    // FD_ZERO(&writeset);
+    // FD_ZERO(&exset);
     while (1) {
         maxfd = listen_fd;
 
@@ -139,11 +138,12 @@ int main(int argc, char **argv) {
         FD_ZERO(&writeset);
         FD_ZERO(&exset);
 
-        // listener加入readset
+        // listener 加入 readset
         FD_SET(listen_fd, &readset);
 
         for (i = 0; i < FD_INIT_SIZE; ++i) {
             if (buffer[i]->connect_fd > 0) {
+                // 取最大文件描述符
                 if (buffer[i]->connect_fd > maxfd)
                     maxfd = buffer[i]->connect_fd;
                 FD_SET(buffer[i]->connect_fd, &readset);

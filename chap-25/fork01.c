@@ -42,6 +42,7 @@ void child_run(int fd) {
 
 
 void sigchld_handler(int sig) {
+    // 循环执行：如果有多个子进程同时结束，内核只会产生一次 SIGCHLD 信号，信号处理函数只会唤醒一次，通过循环取得所有已终止的子进程数据
     while (waitpid(-1, 0, WNOHANG) > 0);
     return;
 }
@@ -57,12 +58,16 @@ int main(int c, char **v) {
             error(1, errno, "accept failed");
             exit(1);
         }
-
+        // fork 创建进程，把地址空间、打开的文件描述符、程序计数器、执行代码都会拷贝一份给子进程
+        
+        // 对于主进程，fork 返回的是子进程的 id；对于子进程则返回 0
         if (fork() == 0) {
+            // 子进程执行代码
             close(listener_fd);
             child_run(fd);
             exit(0);
         } else {
+            // 父进程执行代码
             close(fd);
         }
     }
