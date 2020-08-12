@@ -43,13 +43,20 @@ void child_run(int fd) {
 
 void sigchld_handler(int sig) {
     // 循环执行：如果有多个子进程同时结束，内核只会产生一次 SIGCHLD 信号，信号处理函数只会唤醒一次，通过循环取得所有已终止的子进程数据
+    // WNOHANG 用来告诉内核，即使还有未终止的子进程也不要阻塞在 waitpid 上；
+    // 此处不可使用 wait，wait 函数在有未终止子进程的情况下必须阻塞。
     while (waitpid(-1, 0, WNOHANG) > 0);
     return;
 }
 
 int main(int c, char **v) {
     int listener_fd = tcp_server_listen(SERV_PORT);
+
+    // 回收子进程：当一个子进程退出，系统内核还保留了该进程的若干信息。这样的进程如果不回收，就会变成僵尸进程。
+    // 
     signal(SIGCHLD, sigchld_handler);
+
+    // 父进程关心监听套接字，当 accept 调用返回新的已连接套接字，父进程 fork 派生出一个子进程、为客户端服务
     while (1) {
         struct sockaddr_storage ss;
         socklen_t slen = sizeof(ss);
@@ -58,11 +65,11 @@ int main(int c, char **v) {
             error(1, errno, "accept failed");
             exit(1);
         }
+
         // fork 创建进程，把地址空间、打开的文件描述符、程序计数器、执行代码都会拷贝一份给子进程
-        
-        // 对于主进程，fork 返回的是子进程的 id；对于子进程则返回 0
+        // 对于父进程，fork 返回的是子进程的 id；对于子进程则返回 0
         if (fork() == 0) {
-            // 子进程执行代码
+            // 子进程执行代码：不需要关心监听套接字，故而在此关闭掉监听套接字 listen_fd
             close(listener_fd);
             child_run(fd);
             exit(0);

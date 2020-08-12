@@ -12,13 +12,13 @@ char rot13_char(char c) {
         return c;
 }
 
-//连接建立之后的callback
+// 连接建立之后的 callback
 int onConnectionCompleted(struct tcp_connection *tcpConnection) {
     printf("connection completed\n");
     return 0;
 }
 
-//数据读到buffer之后的callback
+// 数据读到 buffer 之后的 callback
 int onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
     printf("get message from tcp connection %s\n", tcpConnection->name);
     printf("%s", input->data);
@@ -32,29 +32,28 @@ int onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
     return 0;
 }
 
-//数据通过buffer写完之后的callback
+// 数据通过 buffer 写完之后的 callback
 int onWriteCompleted(struct tcp_connection *tcpConnection) {
     printf("write completed\n");
     return 0;
 }
 
-//连接关闭之后的callback
+// 连接关闭之后的 callback
 int onConnectionClosed(struct tcp_connection *tcpConnection) {
     printf("connection closed\n");
     return 0;
 }
 
 int main(int c, char **v) {
-    //主线程event_loop
+    // 主线程event_loop
     struct event_loop *eventLoop = event_loop_init();
 
-    //初始化acceptor
+    // 初始化acceptor
     struct acceptor *acceptor = acceptor_init(SERV_PORT);
 
-    //初始tcp_server，可以指定线程数目，这里线程是4，说明是一个acceptor线程，4个I/O线程，没一个I/O线程
-    //tcp_server自己带一个event_loop
-    struct TCPserver *tcpServer = tcp_server_init(eventLoop, acceptor, onConnectionCompleted, onMessage,
-                                                  onWriteCompleted, onConnectionClosed, 4);
+    // 初始 tcp_server，可以指定线程数目，这里线程是 4，说明是一个 acceptor 线程，4 个 I/O 线程，没一个 I/O 线程
+    // tcp_server自己带一个event_loop
+    struct TCPserver *tcpServer = tcp_server_init(eventLoop, acceptor, onConnectionCompleted, onMessage, onWriteCompleted, onConnectionClosed, 4);
     tcp_server_start(tcpServer);
 
     // main thread for acceptor

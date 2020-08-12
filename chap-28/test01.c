@@ -3,8 +3,8 @@
 int socket_init()
 {
     struct protoent* protocol = NULL;
-    protocol=getprotobyname("icmp");
-    int sock=socket(AF_INET,SOCK_RAW,protocol->p_proto);
+    protocol = getprotobyname("icmp");
+    int sock = socket(AF_INET,SOCK_RAW,protocol->p_proto);
     if(sock == -1){
         error(1,errno,"create socket failed");
     }

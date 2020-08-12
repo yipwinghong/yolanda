@@ -12,14 +12,15 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
+# 判断系统中存在 epoll_create 函数和 sys/epoll.h，就自动开启 EPOLL_ENABLE。否则 EPOLL_ENABLE 就不会开启，自动使用 poll 作为默认的事件分发机制。
 # check epoll and add config.h for the macro compilation
 include(CheckSymbolExists)
 check_symbol_exists(epoll_create "sys/epoll.h" EPOLL_EXISTS)
 if (EPOLL_EXISTS)
-    # Linux下设置为epoll
+    # Linux下设置为 epoll
     set(EPOLL_ENABLE 1 CACHE INTERNAL "enable epoll")
 
-    # Linux下也设置为poll
+    # Linux下也设置为 poll
 #    set(EPOLL_ENABLE "" CACHE INTERNAL "not enable epoll")
 else ()
     set(EPOLL_ENABLE "" CACHE INTERNAL "not enable epoll")

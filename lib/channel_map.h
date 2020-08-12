@@ -5,7 +5,7 @@
 #include "channel.h"
 
 /**
- * channel映射表, key为对应的socket描述字
+ * channel 映射表, key 为对应的socket描述字
  */
 struct channel_map {
     void **entries;

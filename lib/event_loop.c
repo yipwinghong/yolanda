@@ -63,9 +63,7 @@ int event_loop_do_channel_event(struct event_loop *eventLoop, int fd, struct cha
     } else {
         event_loop_handle_pending_channel(eventLoop);
     }
-
     return 0;
-
 }
 
 int event_loop_add_channel_event(struct event_loop *eventLoop, int fd, struct channel *channel1) {
@@ -93,7 +91,7 @@ int event_loop_handle_pending_add(struct event_loop *eventLoop, int fd, struct c
             return (-1);
     }
 
-    //第一次创建，增加
+    // 第一次创建，增加
     if ((map)->entries[fd] == NULL) {
         map->entries[fd] = channel;
         //add channel
@@ -209,6 +207,8 @@ struct event_loop *event_loop_init_with_name(char *thread_name) {
     eventLoop->channelMap = malloc(sizeof(struct channel_map));
     map_init(eventLoop->channelMap);
 
+
+    // 动态选择使用 epoll 或 poll
 #ifdef EPOLL_ENABLE
     yolanda_msgx("set epoll as dispatcher, %s", eventLoop->thread_name);
     eventLoop->eventDispatcher = &epoll_dispatcher;
@@ -235,8 +235,8 @@ struct event_loop *event_loop_init_with_name(char *thread_name) {
 
 /**
  *
- * 1.参数验证
- * 2.调用dispatcher来进行事件分发,分发完回调事件处理函数
+ * 1. 参数验证
+ * 2. 调用 dispatcher 来进行事件分发,分发完回调事件处理函数
  */
 int event_loop_run(struct event_loop *eventLoop) {
     assert(eventLoop != NULL);
