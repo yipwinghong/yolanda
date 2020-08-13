@@ -57,9 +57,9 @@ int main(int argc, char **argv) {
     event.events = EPOLLIN | EPOLLET;
 
     // 将监听套接字对应的 I/O 事件注册，在有新的连接建立之后就可以感知到
-    //      EPOLL_CTL_ADD： 向 epoll 实例注册文件描述符对应的事件；
-    //      EPOLL_CTL_DEL：向 epoll 实例删除文件描述符对应的事件；
-    //      EPOLL_CTL_MOD： 修改文件描述符对应的事件。
+    //      EPOLL_CTL_ADD： 向 epoll 实例注册文件描述字对应的事件；
+    //      EPOLL_CTL_DEL：向 epoll 实例删除文件描述字对应的事件；
+    //      EPOLL_CTL_MOD： 修改文件描述字对应的事件。
     if (epoll_ctl(efd, EPOLL_CTL_ADD, listen_fd, &event) == -1) {
         error(1, errno, "epoll_ctl add listen fd failed");
     }
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
     events = calloc(MAXEVENTS, sizeof(event));
 
     // 主循环调用 epoll_wait 函数分发 I/O 事件，epoll_wait 成功返回时通过遍历返回的 event 数组，就知道发生的 I/O 事件
-    // 由于 epoll 直接返回有事件发生的数组，相比起 poll 返回的是准备好的描述符个数，每次返回都要遍历注册的描述符数组（尤其是数量越大遍历次数越多），即使抛开阻塞和阻塞 I/O 层面，性能也有明显差异
+    // 由于 epoll 直接返回有事件发生的数组，相比起 poll 返回的是准备好的描述字个数，每次返回都要遍历注册的描述字数组（尤其是数量越大遍历次数越多），即使抛开阻塞和阻塞 I/O 层面，性能也有明显差异
     while (1) {
 
         // epoll_wait 阻塞调用的超时值设置为 -1 表示不超时（如果设置为 0 则立即返回，即使没有任何 I/O 事件发生）

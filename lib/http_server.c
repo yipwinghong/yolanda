@@ -113,7 +113,7 @@ int http_onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
         if (http_request_close_connection(httpRequest)) {
             tcp_connection_shutdown(tcpConnection);
         }
-	http_request_reset(httpRequest);
+        http_request_reset(httpRequest);
     }
 }
 
@@ -139,7 +139,7 @@ struct http_server *http_server_new(struct event_loop *eventLoop, int port,
                                     int threadNum) {
     struct http_server *httpServer = malloc(sizeof(struct http_server));
     httpServer->requestCallback = requestCallback;
-    //初始化acceptor
+    // 初始化 acceptor
     struct acceptor *acceptor = acceptor_init(SERV_PORT);
 
     httpServer->tcpServer = tcp_server_init(eventLoop, acceptor, http_onConnectionCompleted, http_onMessage,

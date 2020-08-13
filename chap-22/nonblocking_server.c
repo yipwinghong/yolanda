@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 
         for (i = 0; i < FD_INIT_SIZE; ++i) {
             if (buffer[i]->connect_fd > 0) {
-                // 取最大文件描述符
+                // 取最大文件描述字
                 if (buffer[i]->connect_fd > maxfd)
                     maxfd = buffer[i]->connect_fd;
                 FD_SET(buffer[i]->connect_fd, &readset);

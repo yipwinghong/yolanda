@@ -13,7 +13,11 @@ struct thread_pool *thread_pool_new(struct event_loop *mainLoop, int threadNumbe
     return threadPool;
 }
 
-//一定是main thread发起
+/**
+ * （由主线程）启动线程池
+ *
+ * @param threadPool
+ */
 void thread_pool_start(struct thread_pool *threadPool) {
     assert(!threadPool->started);
     assertInSameThread(threadPool->mainLoop);
@@ -21,12 +25,14 @@ void thread_pool_start(struct thread_pool *threadPool) {
     threadPool->started = 1;
     void *tmp;
 
+    // 如果线程池大小为 0 则直接返回，acceptor 和 I/O 事件都会在同一个主线程里处理，退化为单 reactor 模式
     if (threadPool->thread_number <= 0) {
         return;
     }
 
     threadPool->eventLoopThreads = malloc(threadPool->thread_number * sizeof(struct event_loop_thread));
     for (int i = 0; i < threadPool->thread_number; ++i) {
+        // 对每个子线程初始化并启动
         event_loop_thread_init(&threadPool->eventLoopThreads[i], i);
         event_loop_thread_start(&threadPool->eventLoopThreads[i]);
     }

@@ -28,7 +28,7 @@ void send_data(int sockfd) {
     /* 循环调用 send 函数将 MESSAGE_SIZE 长度的字符串流发送出去 */
     while (remaining) {
         // 发送数据常用 write（支持 socket、文件的写入）、send（支持发送带外数据：基于 TCP 协议的紧急数据）、sendmsg（支持指定多缓冲区传输数据，以 msghdr 方式发送）
-        // 在套接字描述符上调用 write 写入的字节数有可能比请求的数量少（区别于写文件）
+        // 在套接字描述字上调用 write 写入的字节数有可能比请求的数量少（区别于写文件）
         int n_written = send(sockfd, cp, remaining, 0);
         fprintf(stdout, "send into buffer %ld \n", n_written);
         if (n_written <= 0) {

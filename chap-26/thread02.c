@@ -103,7 +103,7 @@ int main(int c, char **v) {
 
     thread_array = calloc(THREAD_NUMBER, sizeof(Thread));
 
-    // 预创建线程，组成线程池（thread_run 会被阻塞，因为 blockQueue 中没有描述符）
+    // 预创建线程，组成线程池（thread_run 会被阻塞，因为 blockQueue 中没有描述字）
     for (int i = 0; i < THREAD_NUMBER; i++) {
         pthread_create(&(thread_array[i].thread_tid), NULL, &thread_run, (void *) &blockQueue);
     }

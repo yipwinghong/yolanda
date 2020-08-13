@@ -6,7 +6,7 @@
 #define    KEEP_ALIVE_PROBETIMES  3
 
 /**
- * 向文件描述符 fd 写入 n 字节数
+ * 向 fd 写入 n 字节数
  *
  * @param fd
  * @param data

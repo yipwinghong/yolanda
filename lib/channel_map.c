@@ -1,21 +1,28 @@
 #include <assert.h>
 #include "channel_map.h"
 
-
+/**
+ * 为 channel_map 分配内存
+ *
+ * @param map
+ * @param slot
+ * @param msize
+ * @return
+ */
 int map_make_space(struct channel_map *map, int slot, int msize) {
     if (map->nentries <= slot) {
         int nentries = map->nentries ? map->nentries : 32;
         void **tmp;
 
-        while (nentries <= slot)
+        while (nentries <= slot) {
             nentries <<= 1;
+        }
 
         tmp = (void **) realloc(map->entries, nentries * msize);
-        if (tmp == NULL)
+        if (tmp == NULL) {
             return (-1);
-
-        memset(&tmp[map->nentries], 0,
-               (nentries - map->nentries) * msize);
+        }
+        memset(&tmp[map->nentries], 0,(nentries - map->nentries) * msize);
 
         map->nentries = nentries;
         map->entries = tmp;

@@ -142,12 +142,14 @@ int epoll_dispatch(struct event_loop *eventLoop, struct timeval *timeval) {
         }
 
         if (epollDispatcherData->events[i].events & EPOLLIN) {
-            yolanda_msgx("get message channel fd==%d for read, %s", epollDispatcherData->events[i].data.fd, eventLoop->thread_name);
+            yolanda_msgx("get message channel fd==%d for read, %s", epollDispatcherData->events[i].data.fd,
+                         eventLoop->thread_name);
             channel_event_activate(eventLoop, epollDispatcherData->events[i].data.fd, EVENT_READ);
         }
 
         if (epollDispatcherData->events[i].events & EPOLLOUT) {
-            yolanda_msgx("get message channel fd==%d for write, %s", epollDispatcherData->events[i].data.fd,eventLoop->thread_name);
+            yolanda_msgx("get message channel fd==%d for write, %s", epollDispatcherData->events[i].data.fd,
+                         eventLoop->thread_name);
             channel_event_activate(eventLoop, epollDispatcherData->events[i].data.fd, EVENT_WRITE);
         }
     }

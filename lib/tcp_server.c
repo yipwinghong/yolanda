@@ -160,22 +160,29 @@ int handle_connection_established(void *data) {
 }
 
 
-//开启监听
+/**
+ * 开启监听
+ *
+ * @param tcpServer
+ */
 void tcp_server_start(struct TCPserver *tcpServer) {
     struct acceptor *acceptor = tcpServer->acceptor;
     struct event_loop *eventLoop = tcpServer->eventLoop;
 
-    //开启多个线程
+    // 启动线程池
     thread_pool_start(tcpServer->threadPool);
 
-    //acceptor主线程， 同时把tcpServer作为参数传给channel对象
-    struct channel *channel = channel_new(acceptor->listen_fd, EVENT_READ, handle_connection_established, NULL,
-                                          tcpServer);
+    // acceptor主线程， 同时把tcpServer作为参数传给channel对象
+    struct channel *channel = channel_new(acceptor->listen_fd, EVENT_READ, handle_connection_established, NULL, tcpServer);
     event_loop_add_channel_event(eventLoop, channel->fd, channel);
-    return;
 }
 
-//设置callback数据
+/**
+ * 设置 callback 数据
+ *
+ * @param tcpServer
+ * @param data
+ */
 void tcp_server_set_data(struct TCPserver *tcpServer, void *data) {
     if (data != NULL) {
         tcpServer->data = data;

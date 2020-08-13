@@ -17,10 +17,10 @@ int main(int argc, char **argv) {
 
     char recv_line[MAXLINE], send_line[MAXLINE];
 
-    // 描述符集合
+    // 描述字集合
     fd_set readmask, allreads;
 
-    // 描述符集合所有元素置 0
+    // 描述字集合所有元素置 0
     FD_ZERO(&allreads);
 
     // 把标准输入对应的位置置为 1
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
         // 每次 select 调用完成后都要重置待测试集合
         readmask = allreads;
 
-        // 待测试的描述符基数，值为最大描述符 + 1，表示为从 0 ~ socket_fd 的 Bitmap：1 为检测、0 为不检测
+        // 待测试的描述字基数，值为最大描述字 + 1，表示为从 0 ~ socket_fd 的 Bitmap：1 为检测、0 为不检测
         // select 函数的返回值：
         //      套接字接收缓冲区有数据可以读，如果使用 read 函数去执行读操作，肯定不会被阻塞，而是会直接读到这部分数据；
         //      对方发送了 FIN，使用 read 函数执行读操作，不会被阻塞，直接返回 0；

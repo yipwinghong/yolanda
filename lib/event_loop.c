@@ -8,7 +8,7 @@
 
 // in the i/o thread
 int event_loop_handle_pending_channel(struct event_loop *eventLoop) {
-    //get the lock
+    // get the lock
     pthread_mutex_lock(&eventLoop->mutex);
     eventLoop->is_handle_pending = 1;
 
@@ -66,44 +66,81 @@ int event_loop_do_channel_event(struct event_loop *eventLoop, int fd, struct cha
     return 0;
 }
 
+/**
+ * 新增 channel event 事件
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel1
+ * @return
+ */
 int event_loop_add_channel_event(struct event_loop *eventLoop, int fd, struct channel *channel1) {
     return event_loop_do_channel_event(eventLoop, fd, channel1, 1);
 }
 
+/**
+ * 删除 channel event 事件
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel1
+ * @return
+ */
 int event_loop_remove_channel_event(struct event_loop *eventLoop, int fd, struct channel *channel1) {
     return event_loop_do_channel_event(eventLoop, fd, channel1, 2);
 }
 
+/**
+ * 修改 channel event 事件
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel1
+ * @return
+ */
 int event_loop_update_channel_event(struct event_loop *eventLoop, int fd, struct channel *channel1) {
     return event_loop_do_channel_event(eventLoop, fd, channel1, 3);
 }
 
-// in the i/o thread
+/**
+ * 新增 channel event 事件
+ *
+ * in the i/o thread
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel
+ * @return
+ */
 int event_loop_handle_pending_add(struct event_loop *eventLoop, int fd, struct channel *channel) {
     yolanda_msgx("add channel fd == %d, %s", fd, eventLoop->thread_name);
     struct channel_map *map = eventLoop->channelMap;
-
-    if (fd < 0)
+    if (fd < 0) {
         return 0;
-
+    }
     if (fd >= map->nentries) {
         if (map_make_space(map, fd, sizeof(struct channel *)) == -1)
             return (-1);
     }
-
-    // 第一次创建，增加
     if ((map)->entries[fd] == NULL) {
         map->entries[fd] = channel;
-        //add channel
         struct event_dispatcher *eventDispatcher = eventLoop->eventDispatcher;
         eventDispatcher->add(eventLoop, channel);
         return 1;
     }
-
     return 0;
 }
 
-// in the i/o thread
+/**
+ * 删除 channel event 事件
+ *
+ * in the i/o thread
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel1
+ * @return
+ */
 int event_loop_handle_pending_remove(struct event_loop *eventLoop, int fd, struct channel *channel1) {
     struct channel_map *map = eventLoop->channelMap;
     assert(fd == channel1->fd);
@@ -130,7 +167,16 @@ int event_loop_handle_pending_remove(struct event_loop *eventLoop, int fd, struc
     return retval;
 }
 
-// in the i/o thread
+/**
+ * 修改 channel event 事件
+ *
+ * in the i/o thread
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel
+ * @return
+ */
 int event_loop_handle_pending_update(struct event_loop *eventLoop, int fd, struct channel *channel) {
     yolanda_msgx("update channel fd == %d, %s", fd, eventLoop->thread_name);
     struct channel_map *map = eventLoop->channelMap;
@@ -147,23 +193,39 @@ int event_loop_handle_pending_update(struct event_loop *eventLoop, int fd, struc
     eventDispatcher->update(eventLoop, channel);
 }
 
+/**
+ * 找到了对应的 channel 对象后根据事件类型，回调读函数或者写函数
+ *
+ * @param eventLoop
+ * @param fd
+ * @param revents
+ * @return
+ */
 int channel_event_activate(struct event_loop *eventLoop, int fd, int revents) {
     struct channel_map *map = eventLoop->channelMap;
     yolanda_msgx("activate channel fd == %d, revents=%d, %s", fd, revents, eventLoop->thread_name);
 
-    if (fd < 0)
+    // fd 范围越界
+    if (fd < 0) {
         return 0;
+    }
+    if (fd >= map->nentries) {
+        return (-1);
+    }
 
-    if (fd >= map->nentries)return (-1);
-
+    // 从 map 中获取 channel 对象，并根据事件类型调用回调函数
     struct channel *channel = map->entries[fd];
     assert(fd == channel->fd);
 
     if (revents & (EVENT_READ)) {
-        if (channel->eventReadCallback) channel->eventReadCallback(channel->data);
+        if (channel->eventReadCallback) {
+            channel->eventReadCallback(channel->data);
+        }
     }
     if (revents & (EVENT_WRITE)) {
-        if (channel->eventWriteCallback) channel->eventWriteCallback(channel->data);
+        if (channel->eventWriteCallback) {
+            channel->eventWriteCallback(channel->data);
+        }
     }
 
     return 0;
@@ -192,6 +254,11 @@ struct event_loop *event_loop_init() {
     return event_loop_init_with_name(NULL);
 }
 
+/**
+ *
+ * @param thread_name
+ * @return
+ */
 struct event_loop *event_loop_init_with_name(char *thread_name) {
     struct event_loop *eventLoop = malloc(sizeof(struct event_loop));
     pthread_mutex_init(&eventLoop->mutex, NULL);
@@ -206,7 +273,6 @@ struct event_loop *event_loop_init_with_name(char *thread_name) {
     eventLoop->quit = 0;
     eventLoop->channelMap = malloc(sizeof(struct channel_map));
     map_init(eventLoop->channelMap);
-
 
     // 动态选择使用 epoll 或 poll
 #ifdef EPOLL_ENABLE
@@ -234,28 +300,34 @@ struct event_loop *event_loop_init_with_name(char *thread_name) {
 }
 
 /**
+ * event_loop 启动入口
+ *
+ * event_loop 在不退出的情况下，一直在循环，调用 dispatcher 对象的 dispatch 方法来等待事件的发生
  *
  * 1. 参数验证
- * 2. 调用 dispatcher 来进行事件分发,分发完回调事件处理函数
+ * 2. 调用 dispatcher 来进行事件分发，分发完回调事件处理函数
  */
 int event_loop_run(struct event_loop *eventLoop) {
+
+    // 线程 id 不能为空，event_loop 对象不能为空
     assert(eventLoop != NULL);
-
     struct event_dispatcher *dispatcher = eventLoop->eventDispatcher;
-
     if (eventLoop->owner_thread_id != pthread_self()) {
         exit(1);
     }
 
     yolanda_msgx("event loop run, %s", eventLoop->thread_name);
+
     struct timeval timeval;
     timeval.tv_sec = 1;
 
     while (!eventLoop->quit) {
-        //block here to wait I/O event, and get active channels
+        // block here to wait I/O event, and get active channels
+        // 阻塞等待事件发生：创建连接对象 tcp_connection、channel 对象等
         dispatcher->dispatch(eventLoop, &timeval);
 
-        //handle the pending channel
+        // handle the pending channel
+        // 处理等待的 channel
         event_loop_handle_pending_channel(eventLoop);
     }
 
