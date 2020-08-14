@@ -6,7 +6,13 @@
 #include "channel.h"
 #include "utils.h"
 
-// in the i/o thread
+/**
+ * in the i/o thread
+ * 遍历当前 event loop 里 pending 的 channel event 列表，将其和 event_dispatcher 关联，从而修改感兴趣的事件集合
+ *
+ * @param eventLoop
+ * @return
+ */
 int event_loop_handle_pending_channel(struct event_loop *eventLoop) {
     // get the lock
     pthread_mutex_lock(&eventLoop->mutex);
@@ -36,6 +42,13 @@ int event_loop_handle_pending_channel(struct event_loop *eventLoop) {
     return 0;
 }
 
+/**
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel1
+ * @param type
+ */
 void event_loop_channel_buffer_nolock(struct event_loop *eventLoop, int fd, struct channel *channel1, int type) {
     //add channel into the pending list
     struct channel_element *channelElement = malloc(sizeof(struct channel_element));
@@ -51,16 +64,33 @@ void event_loop_channel_buffer_nolock(struct event_loop *eventLoop, int fd, stru
     }
 }
 
+/**
+ *
+ * @param eventLoop
+ * @param fd
+ * @param channel1
+ * @param type
+ * @return
+ */
 int event_loop_do_channel_event(struct event_loop *eventLoop, int fd, struct channel *channel1, int type) {
-    //get the lock
+
+    // event loop 线程得到活动事件之后，会回调事件处理函数（onMessage 等）
+    // 如果这里的业务逻辑过于复杂，就会导致 event_loop_handle_pending_channel 执行的时间偏后，从而影响 I/O 的检测
+
+    // get the lock
     pthread_mutex_lock(&eventLoop->mutex);
     assert(eventLoop->is_handle_pending == 0);
+    // 获取锁后主线程调用往子线程的数据中增加需要处理的 channel event 对象
     event_loop_channel_buffer_nolock(eventLoop, fd, channel1, type);
-    //release the lock
+    // release the lock
     pthread_mutex_unlock(&eventLoop->mutex);
+
+    // 如果是主线程发起操作，则调用 event_loop_wakeup 唤醒子线程
     if (!isInSameThread(eventLoop)) {
         event_loop_wakeup(eventLoop);
-    } else {
+    }
+    // 如果是子线程自己，则直接可以操作
+    else {
         event_loop_handle_pending_channel(eventLoop);
     }
     return 0;
@@ -232,7 +262,13 @@ int channel_event_activate(struct event_loop *eventLoop, int fd, int revents) {
 
 }
 
+/**
+ *
+ *
+ * @param eventLoop
+ */
 void event_loop_wakeup(struct event_loop *eventLoop) {
+    // socketPair[0] 上写一个字节即可把 event_loop 子线程唤醒（因为 event_loop 已经注册了 socketPair[1]的可读事件）
     char one = 'a';
     ssize_t n = write(eventLoop->socketPair[0], &one, sizeof one);
     if (n != sizeof one) {
@@ -240,6 +276,12 @@ void event_loop_wakeup(struct event_loop *eventLoop) {
     }
 }
 
+/**
+ * 让子线程从 dispatch 的阻塞中苏醒
+ *
+ * @param data
+ * @return
+ */
 int handleWakeup(void *data) {
     struct event_loop *eventLoop = (struct event_loop *) data;
     char one;
@@ -255,6 +297,11 @@ struct event_loop *event_loop_init() {
 }
 
 /**
+ * 由于 sub-reactor 线程是一个无限循环的 event loop 执行体，在没有已注册事件发生的情况下，会阻塞在 event_dispatcher 的 dispatch 上；
+ *
+ * 1. 构建一个类似管道的描述字，让 event_dispatcher 注册该管道描述字；
+ * 2. 往管道发送消息，使 sub-reactor 线程从 event_dispatcher 的 dispatch 上返回；
+ * 3. sub-reactor 线程返回后把新的已连接套接字事件注册上，主线程把已连接套接字交给 sub-reactor 子线程
  *
  * @param thread_name
  * @return
@@ -284,7 +331,7 @@ struct event_loop *event_loop_init_with_name(char *thread_name) {
 #endif
     eventLoop->event_dispatcher_data = eventLoop->eventDispatcher->init(eventLoop);
 
-    //add the socketfd to event
+    // add the socketfd to event 创建的是套接字对，目的是唤醒子线程
     eventLoop->owner_thread_id = pthread_self();
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, eventLoop->socketPair) < 0) {
         LOG_ERR("socketpair set fialed");
@@ -293,6 +340,7 @@ struct event_loop *event_loop_init_with_name(char *thread_name) {
     eventLoop->pending_head = NULL;
     eventLoop->pending_tail = NULL;
 
+    // 告诉 event_loop 注册了 socketPair[1] 描述字上的 READ 事件；如果有 READ 事件发生，就调用 handleWakeup 函数来完成事件处理。
     struct channel *channel = channel_new(eventLoop->socketPair[1], EVENT_READ, handleWakeup, NULL, eventLoop);
     event_loop_add_channel_event(eventLoop, eventLoop->socketPair[1], channel);
 

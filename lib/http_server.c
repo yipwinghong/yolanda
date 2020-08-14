@@ -10,37 +10,52 @@ int http_onConnectionCompleted(struct tcp_connection *tcpConnection) {
     return 0;
 }
 
+/**
+ *
+ * @param start
+ * @param end
+ * @param httpRequest
+ * @return
+ */
 int process_status_line(char *start, char *end, struct http_request *httpRequest) {
-    int size = end - start;
-    //method
-    char *space = memmem(start, end - start, " ", 1);
+    // method
+    char *space = (char *) memmem(start, end - start, " ", 1);
     assert(space != NULL);
-    int method_size = space - start;
+    int method_size = (int) (space - start);
     httpRequest->method = malloc(method_size + 1);
-    strncpy(httpRequest->method, start, space - start);
+    strncpy(httpRequest->method, start, method_size);
     httpRequest->method[method_size + 1] = '\0';
+    start += method_size + 1;
 
-    //url
-    start = space + 1;
-    space = memmem(start, end - start, " ", 1);
+    // url
+    space = (char *) memmem(start, end - start, " ", 1);
     assert(space != NULL);
-    int url_size = space - start;
+    int url_size = (int) (space - start);
     httpRequest->url = malloc(url_size + 1);
-    strncpy(httpRequest->url, start, space - start);
+    strncpy(httpRequest->url, start, url_size);
     httpRequest->url[url_size + 1] = '\0';
+    start += url_size + 1;
 
-    //version
-    start = space + 1;
-    httpRequest->version = malloc(end - start + 1);
-    strncpy(httpRequest->version, start, end - start);
-    httpRequest->version[end - start + 1] = '\0';
+    // version
+    space = (char *) memmem(start, end - start, "\r\n", 1);
     assert(space != NULL);
-    return size;
+    int version_size = (int) (space - start);
+    httpRequest->version = malloc(version_size + 1);
+    strncpy(httpRequest->version, start, version_size);
+    httpRequest->version[version_size + 1] = '\0';
+    return end - start;
 }
 
+/**
+ *
+ * @param input
+ * @param httpRequest
+ * @return
+ */
 int parse_http_request(struct buffer *input, struct http_request *httpRequest) {
     int ok = 1;
     while (httpRequest->current_state != REQUEST_DONE) {
+
         if (httpRequest->current_state == REQUEST_STATUS) {
             char *crlf = buffer_find_CRLF(input);
             if (crlf) {
@@ -73,7 +88,7 @@ int parse_http_request(struct buffer *input, struct http_request *httpRequest) {
                     input->readIndex += request_line_size;  //request line size
                     input->readIndex += 2;  //CRLF size
                 } else {
-                    //读到这里说明:没找到，就说明这个是最后一行
+                    // 读到这里说明:没找到，就说明这个是最后一行
                     input->readIndex += 2;  //CRLF size
                     httpRequest->current_state = REQUEST_DONE;
                 }
@@ -84,7 +99,7 @@ int parse_http_request(struct buffer *input, struct http_request *httpRequest) {
 }
 
 
-// buffer是框架构建好的，并且已经收到部分数据的情况下
+// buffer 是框架构建好的，并且已经收到部分数据的情况下
 // 注意这里可能没有收到全部数据，所以要处理数据不够的情形
 int http_onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
     yolanda_msgx("get message from tcp connection %s", tcpConnection->name);
@@ -100,6 +115,7 @@ int http_onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
 
     //处理完了所有的request数据，接下来进行编码和发送
     if (http_request_current_state(httpRequest) == REQUEST_DONE) {
+
         struct http_response *httpResponse = http_response_new();
 
         //httpServer暴露的requestCallback回调
@@ -107,6 +123,7 @@ int http_onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
             httpServer->requestCallback(httpRequest, httpResponse);
         }
         struct buffer *buffer = buffer_new();
+
         http_response_encode_buffer(httpResponse, buffer);
         tcp_connection_send_buffer(tcpConnection, buffer);
 
@@ -115,6 +132,7 @@ int http_onMessage(struct buffer *input, struct tcp_connection *tcpConnection) {
         }
         http_request_reset(httpRequest);
     }
+
 }
 
 //数据通过buffer写完之后的callback

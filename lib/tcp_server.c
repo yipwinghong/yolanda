@@ -130,7 +130,13 @@ tcp_server_init(struct event_loop *eventLoop, struct acceptor *acceptor,
     return tcpServer;
 }
 
-
+/**
+ * 处理连接建立的回调函数，通过 accept 调用获取了已连接套接字，将其设置为非阻塞套接字；
+ * 调用 thread_pool_get_loop 获取一个 event_loop：即从 thread_pool 线程池中按照顺序挑选出一个线程来服务。
+ *
+ * @param data
+ * @return
+ */
 int handle_connection_established(void *data) {
     struct TCPserver *tcpServer = (struct TCPserver *) data;
     struct acceptor *acceptor = tcpServer->acceptor;
@@ -138,21 +144,26 @@ int handle_connection_established(void *data) {
 
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
+
+    // 获取已建立连接套接字，设置为非阻塞套接字
     int connected_fd = accept(listenfd, (struct sockaddr *) &client_addr, &client_len);
     make_nonblocking(connected_fd);
 
     yolanda_msgx("new connection established, socket == %d", connected_fd);
 
+    // 从线程池里选择一个 event_loop 来服务这个新的连接套接字
     // choose event loop from the thread pool
     struct event_loop *eventLoop = thread_pool_get_loop(tcpServer->threadPool);
 
+    // 为新建立套接字创建 tcp_connection 对象，设置应用程序的 callback 函数
     // create a new tcp connection
     struct tcp_connection *tcpConnection = tcp_connection_new(connected_fd, eventLoop,
                                                               tcpServer->connectionCompletedCallBack,
                                                               tcpServer->connectionClosedCallBack,
                                                               tcpServer->messageCallBack,
                                                               tcpServer->writeCompletedCallBack);
-    //for callback use
+    // callback内部使用
+    // for callback use
     if (tcpServer->data != NULL) {
         tcpConnection->data = tcpServer->data;
     }

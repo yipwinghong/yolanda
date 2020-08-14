@@ -39,13 +39,13 @@ int handle_write(void *data) {
     ssize_t nwrited = write(channel->fd, output_buffer->data + output_buffer->readIndex,
                             buffer_readable_size(output_buffer));
     if (nwrited > 0) {
-        //已读nwrited字节
+        // 已读 nwrited 字节
         output_buffer->readIndex += nwrited;
-        //如果数据完全发送出去，就不需要继续了
+        // 如果数据完全发送出去，就不需要继续了
         if (buffer_readable_size(output_buffer) == 0) {
             channel_write_event_disable(channel);
         }
-        //回调writeCompletedCallBack
+        // 回调 writeCompletedCallBack
         if (tcpConnection->writeCompletedCallBack != NULL) {
             tcpConnection->writeCompletedCallBack(tcpConnection);
         }
@@ -55,8 +55,17 @@ int handle_write(void *data) {
 
 }
 
-struct tcp_connection *
-tcp_connection_new(int connected_fd, struct event_loop *eventLoop,
+/**
+ *
+ * @param connected_fd
+ * @param eventLoop
+ * @param connectionCompletedCallBack
+ * @param connectionClosedCallBack
+ * @param messageCallBack
+ * @param writeCompletedCallBack
+ * @return
+ */
+struct tcp_connection *tcp_connection_new(int connected_fd, struct event_loop *eventLoop,
                    connection_completed_call_back connectionCompletedCallBack,
                    connection_closed_call_back connectionClosedCallBack,
                    message_call_back messageCallBack, write_completed_call_back writeCompletedCallBack) {
@@ -69,25 +78,34 @@ tcp_connection_new(int connected_fd, struct event_loop *eventLoop,
     tcpConnection->input_buffer = buffer_new();
     tcpConnection->output_buffer = buffer_new();
 
-
     char *buf = malloc(16);
     sprintf(buf, "connection-%d\0", connected_fd);
     tcpConnection->name = buf;
 
+    // 为新的连接对象创建可读事件
     // add event read for the new connection
     struct channel *channel1 = channel_new(connected_fd, EVENT_READ, handle_read, handle_write, tcpConnection);
     tcpConnection->channel = channel1;
 
-    //connectionCompletedCallBack callback
+    // 完成对 connectionCompleted 的函数回调
+    // connectionCompletedCallBack callback
     if (tcpConnection->connectionCompletedCallBack != NULL) {
         tcpConnection->connectionCompletedCallBack(tcpConnection);
     }
 
+    // 把该套集字对应的 channel 对象注册到 event_loop 事件分发器上
     event_loop_add_channel_event(tcpConnection->eventLoop, connected_fd, tcpConnection->channel);
     return tcpConnection;
 }
 
-//应用层调用入口
+/**
+ * 应用层调用入口
+ *
+ * @param tcpConnection
+ * @param data
+ * @param size
+ * @return
+ */
 int tcp_connection_send_data(struct tcp_connection *tcpConnection, void *data, int size) {
     size_t nwrited = 0;
     size_t nleft = size;
@@ -96,7 +114,7 @@ int tcp_connection_send_data(struct tcp_connection *tcpConnection, void *data, i
     struct channel *channel = tcpConnection->channel;
     struct buffer *output_buffer = tcpConnection->output_buffer;
 
-    //先往套接字尝试发送数据
+    // 先往套接字尝试发送数据
     if (!channel_write_event_is_enabled(channel) && buffer_readable_size(output_buffer) == 0) {
         nwrited = write(channel->fd, data, size);
         if (nwrited >= 0) {
@@ -112,7 +130,7 @@ int tcp_connection_send_data(struct tcp_connection *tcpConnection, void *data, i
     }
 
     if (!fault && nleft > 0) {
-        //拷贝到Buffer中，Buffer的数据由框架接管
+        // 拷贝到 Buffer中，Buffer 的数据由框架接管
         buffer_append(output_buffer, data + nwrited, nleft);
         if (!channel_write_event_is_enabled(channel)) {
             channel_write_event_enable(channel);

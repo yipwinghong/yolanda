@@ -21,14 +21,8 @@ void init_event_set() {
 }
 
 void add_event_set(int fd, int event) {
-    //找到一个可以记录该连接套接字的位置
-    for (i = 1; i < FOPEN_MAX; i++) {
-        if (client[i].fd < 0) {
-            client[i].fd = connected_fd;
-            client[i].events = POLLRDNORM;
-            break;
-        }
-    }
+
+
 }
 
 
@@ -62,7 +56,14 @@ int main(int argc, char **argv) {
             socklen_t client_len = sizeof(client_addr);
             connected_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_len);
 
-            add_event_set(connected_fd, POLLRDNORM);
+            // 找到一个可以记录该连接套接字的位置
+            for (i = 1; i < FOPEN_MAX; i++) {
+                if (client[i].fd < 0) {
+                    client[i].fd = connected_fd;
+                    client[i].events = POLLRDNORM;
+                    break;
+                }
+            }
 
             if (i == FOPEN_MAX) {
                 error(1, errno, "can not hold so many clients");

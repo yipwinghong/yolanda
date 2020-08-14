@@ -3,7 +3,7 @@
 #include "event_loop.h"
 
 /**
- * （由子线程调用）启动 event_loop，并完成线程初始化工作
+ * （由子线程调用）启动 event_loop，并完成线程初始化工作；
  *
  * @param arg
  * @return
@@ -51,6 +51,7 @@ int event_loop_thread_init(struct event_loop_thread *eventLoopThread, int i) {
 
 /**
  * （由主线程调用）初始化一个子线程，并且让子线程开始运行 event_loop
+ * TODO 暂时未理解
  *
  * @param eventLoopThread
  * @return

@@ -20,7 +20,7 @@ int onRequest(struct http_request *httpRequest, struct http_response *httpRespon
         httpResponse->statusCode = OK;
         httpResponse->statusMessage = "OK";
         httpResponse->contentType = "text/html";
-        httpResponse->body = "<html><head><title>This is network programming</title></head><body><h1>Hello, network programming</h1></body></html>";
+        httpResponse->body = "<html><head><title>title</title></head><body><h1>Hello, network programming</h1></body></html>";
     } else if (strcmp(path, "/network") == 0) {
         httpResponse->statusCode = OK;
         httpResponse->statusMessage = "OK";
